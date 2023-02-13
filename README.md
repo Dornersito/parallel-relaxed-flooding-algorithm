@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/598480743.svg)](https://zenodo.org/badge/latestdoi/598480743)
+
 ## Parallel Relaxed Flooding Algorithm (PRFA)
 
 A GPU-based parallel algorithm for Voronoi diagram generation.
