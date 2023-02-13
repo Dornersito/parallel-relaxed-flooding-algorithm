@@ -5,3 +5,5 @@
 *.cubin
 *.fatbin
 *.vscode
+*.DS_Store
+build/

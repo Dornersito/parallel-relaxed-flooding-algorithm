@@ -30,19 +30,16 @@ const static E_DISTRIBUTION DISTRIBUTION = E_DISTRIBUTION::uniform;
 // sqrt(41943) = 205, sqrt(4194) = 65, sqrt(419) = 20
 // pow(41943, 1/3) = 35, pow(4194, 1/3) = 17, pow(419, 1/3) = 7 
 
-#define BLOCK_SIZE_2D_X 64
-#define BLOCK_SIZE_2D_Y 64
-
 // must be power of 2
 #define PRFA_BLOCK_SIZE_2D_X 32
 #define PRFA_BLOCK_SIZE_2D_Y 32
 
 #define THREAD_DIM  4                   // this affects footmark in PRFA's kernel
 
-// K nearest points for kd-tree
-#define K 3
+// K nearest points for k-d tree
+#define K 7
 #define COMPRESS_KD_NODE true
-#define TREE_H 13   // log2(2, SITES_NUMBER), for kd-tree
+#define TREE_H 13   // log2(2, SITES_NUMBER), for k-d tree
 // 15: 4
 // 2D 0.01%  105: 7, 419: 9, 1678: 11, 6711: 13, 26844: 15
 // 2D 0.1%  1049: 11, 4194: 13, 16777: 15, 67109: 17, 268435: 19

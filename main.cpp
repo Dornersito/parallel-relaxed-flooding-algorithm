@@ -25,15 +25,16 @@ File Name: main.cpp
 #include "bfa/bfa.h"
 
 static const bool CHECK_FAULT = true;       // check incorrect results of pixel labels
-static const bool ITER_TEST = true;
+static const bool PRINT_FAULT = false;       // print all incorrect pixel crds
+static const bool ITER_TEST = false;
 static const int ITER_COUNT = 20 + 1;       // skip the 1st iter for average time
-static const bool USE_IMAGE_INPUT = false;  // if true, change the SITES_NUMBER to 0
+static const bool USE_IMAGE_INPUT = false;  // if true, change the SITES_NUMBER to 0 and set PIC_WIDTH to the image's size
 static const bool PRINT_VORONOI = false;
 
 // test data file, nuclei_frame0XX.txt
 static const std::string IMAGE_INPUT_PREFIX = "../images/nuclei_EDF0";
 static const std::string IMAGE_OUTPUT_PREFIX = "../images/diagram_output/diagram_EDF0";
-static const std::string IMAGE_FILE_NUMBER = "07.txt"
+static const std::string IMAGE_FILE_NUMBER = "07.txt";
 
 float dur_global_prfa[ITER_COUNT], dur_H2D_global_prfa[ITER_COUNT], dur_kernel_global_prfa[ITER_COUNT], dur_D2H_global_prfa[ITER_COUNT];
 int error_count_global_prfa[ITER_COUNT];
@@ -218,9 +219,11 @@ void verifyResult() {
             }
 
             if (correct_dist != myDist) {
-                printf("Fault coord: (%d, %d)\n", i, j);
-                printf("    Correct site num and coord: %d, (%d, %d)\n", b_site_idx, b_tx, b_ty);
-                printf("    Wrong site coord: (%d, %d)\n", m_tx, m_ty);
+                if (PRINT_FAULT) {
+                    printf("Fault coord: (%d, %d)\n", i, j);
+                    printf("    Correct site num and coord: %d, (%d, %d)\n", b_site_idx, b_tx, b_ty);
+                    printf("    Wrong site coord: (%d, %d)\n", m_tx, m_ty);
+                }
                 ++errorCount;
             }
         }
@@ -230,6 +233,7 @@ void verifyResult() {
 }
 
 void convert_output_diagram(int *voronoi, std::string pic_name) {
+    printf("Converting pixel labels\n");
     for (int j = 0; j < PIC_WIDTH; ++j) {
         for (int i = 0; i < PIC_WIDTH; ++i) {
             int sx = pfaOutputVoronoi[(j * PIC_WIDTH + i) * 2];
@@ -241,9 +245,8 @@ void convert_output_diagram(int *voronoi, std::string pic_name) {
             }
         }
         if (j % 100 == 0)
-            printf("line %d Voronoi converting complete\n", j);
+            printf("line %d complete\n", j);
     }
-    printf("voronoi array converting complete\n");
 
     std::fstream fs;
     // each pixel is the point label
@@ -258,7 +261,6 @@ void convert_output_diagram(int *voronoi, std::string pic_name) {
     }
     fs.close();
     std::cout << pic_name << " output complete" << std::endl;
-    
 }
 
 
@@ -297,8 +299,8 @@ void runTests() {
     root = make_tree(kdtree_p, kdtree_p + SITES_NUMBER, 0);
     convert_tree(root, kdtree, 1, kdtree_array_size);
 
-    printf("Texture: %dx%d\n", PIC_WIDTH, PIC_WIDTH);
-    printf("Points: %d\n", SITES_NUMBER);
+    printf("Image size: %dx%d\n", PIC_WIDTH, PIC_WIDTH);
+    printf("Point count: %d\n", SITES_NUMBER);
     printf("K = %d\n", K);
     printf("-----------------\n");
     
@@ -307,7 +309,6 @@ void runTests() {
     if (CHECK_FAULT) {
         dur_cuda = bfaVoronoiDiagram(brute_voronoi_int, inputPoints); 
         printf("BFA completed.\n");
-        printf("CUDA timer BFA Run time: %.*fms\n", 4, dur_cuda);
         
     }
 
@@ -317,7 +318,7 @@ void runTests() {
     if (ITER_TEST)
         dur_global_prfa[dur_idx] = dur_cuda;
 
-    printf("pfa completed.\n");
+    printf("PRFA completed.\n");
     printf("-----------------\n");
 
     pfaDeinitialization();
@@ -348,6 +349,7 @@ int main(int argc,char **argv) {
         double avg_error_count_prfa = 0;
 
         for (dur_idx = 0; dur_idx < ITER_COUNT; ++dur_idx) {
+            printf("-----------------\n");
             printf("iter num: %d\n", dur_idx);
             runTests();
             if (dur_idx == 0) continue;
@@ -361,7 +363,8 @@ int main(int argc,char **argv) {
         avg_dur1_prfa /= iter_count; avg_dur2_prfa /= iter_count; avg_dur3_prfa /= iter_count;
         avg_error_count_prfa /= iter_count * 1.0f;
 
-        printf("\n\n");
+        printf("-----------------\n");
+        printf("PRFA complete, total %d iter\n", iter_count);
         // RNG instances, uniform = 0, normal = 1, clusters = 2, alignments = 3
         if (DISTRIBUTION == E_DISTRIBUTION::uniform) {
             printf("uniform distribution\n");
@@ -372,48 +375,13 @@ int main(int argc,char **argv) {
         } else if (DISTRIBUTION == E_DISTRIBUTION::alignments) {
             printf("alignments distribution\n");
         }
-
-        printf("--- PRFA ---\n");
-        printf("K = %d, total %d iter\n", K, iter_count);
+        printf("Image width = %d, point count = %d, K = %d\n", PIC_WIDTH, SITES_NUMBER, K);
         printf("avg dur = %.4fms\n", avg_dur_total_prfa);
         printf("avg dur H2D = %.4fms, avg dur kernel = %.4fms, avg dur D2H = %.4fms\n", avg_dur1_prfa, avg_dur2_prfa, avg_dur3_prfa);
         printf("avg error count = %.4f\n", avg_error_count_prfa);
-
-        // write results to a file
-        std::fstream fs;
-        // PIC_WIDTH, SITES_NUMBER, K, ITER_COUNT-1, avg_dur_total_prfa, avg_error_count_prfa
-        fs.open("../prfa_result_tmp.txt", std::fstream::out | std::fstream::app);
-        fs << "PRFA PIC_WIDTH: " << PIC_WIDTH << ", SITES_NUM: " << SITES_NUMBER << ", K: " << K << ", ITER_COUNT: " << 
-            iter_count << ", total time: " << std::setprecision(10) << avg_dur_total_prfa << "ms, dur1: " << 
-            avg_dur1_prfa << "ms, dur2: " << avg_dur2_prfa << "ms, dur3: " << avg_dur3_prfa << "ms, error count: " << 
-            avg_error_count_prfa << "\n";
-
-        fs << "H2D time = [";
-        for (int it = 0; it < ITER_COUNT; ++it) {
-            fs << dur_H2D_global_prfa[it];
-            fs << ((it == ITER_COUNT - 1) ? "]\n" : ", ");
-        }
-        fs << "GPU computation time = [";
-        for (int it = 0; it < ITER_COUNT; ++it) {
-            fs << dur_kernel_global_prfa[it];
-            fs << ((it == ITER_COUNT - 1) ? "]\n" : ", ");
-        }
-        fs << "D2H time = [";
-        for (int it = 0; it < ITER_COUNT; ++it) {
-            fs << dur_D2H_global_prfa[it];
-            fs << ((it == ITER_COUNT - 1) ? "]\n" : ", ");
-        }
-        fs.close();
-
-        fs.open("../prfa_result_for_md.txt", std::fstream::out | std::fstream::app);
-        fs << "| " << K << " | " << std::setprecision (2) << std::fixed << avg_dur_total_prfa << " | " << 
-        avg_dur1_prfa << " | " << avg_dur2_prfa << " | " << avg_dur3_prfa << " | " << avg_error_count_prfa << " |" << std::endl;
-        fs.close();
-        printf("| %d | %.2f | %.2f | %.2f | %.2f | %.2f |\n", K, avg_dur_total_prfa, avg_dur1_prfa, avg_dur2_prfa, avg_dur3_prfa, avg_error_count_prfa);
     } else {
         runTests();
     }
-
     deinitialization();
 	return 0;
 }
