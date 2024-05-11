@@ -24,10 +24,10 @@ File Name: main.cpp
 
 #include "bfa/bfa.h"
 
-static const bool CHECK_FAULT = true;       // check incorrect results of pixel labels
+static const bool CHECK_FAULT = false;       // check incorrect results of pixel labels
 static const bool PRINT_FAULT = false;       // print all incorrect pixel crds
 static const bool ITER_TEST = false;
-static const int ITER_COUNT = 20 + 1;       // skip the 1st iter for average time
+static const int ITER_COUNT = 5 + 1;       // skip the 1st iter for average time
 static const bool USE_IMAGE_INPUT = false;  // if true, change the SITES_NUMBER to 0 and set PIC_WIDTH to the image's size
 static const bool PRINT_VORONOI = false;
 
@@ -107,7 +107,7 @@ void generateRandomPoints(int width, int nPoints) {
 }
 
 // read point data from an txt file
-bool readInputFile() {
+bool readInputFile(int PIC_WIDTH) {
     // read from txt
     SITES_NUMBER = 0;
     memset(inputPoints, 0, sizeof(inputPoints));
@@ -168,7 +168,7 @@ void deinitialization() {
 
 // Init    
 #define ULL unsigned long long
-void initialization() {
+void initialization(int PIC_WIDTH) {
     if (USE_IMAGE_INPUT == true)
         inputPoints     = (short *) malloc((ULL)POW_DIM(PIC_WIDTH) * (ULL)DIM * (ULL)sizeof(short));
     else
@@ -183,11 +183,11 @@ void initialization() {
 }
 
 // Init points
-void initPoints() {
+void initPoints(int PIC_WIDTH) {
     kdtree_array_size = next_pow_of_2(SITES_NUMBER);
-    pfaInitialization(kdtree_array_size);
+    pfaInitialization(kdtree_array_size, PIC_WIDTH);
     if (CHECK_FAULT)
-        bfaInitialization(SITES_NUMBER);
+        bfaInitialization(SITES_NUMBER, PIC_WIDTH);
     
     kdtree_p          = (struct kd_node_t *) malloc((ULL)SITES_NUMBER * (ULL)sizeof(struct kd_node_t)); 
     kdtree            = (DTYPE *) malloc((ULL)kdtree_array_size * (ULL)DIM * (ULL)sizeof(DTYPE));
@@ -195,7 +195,7 @@ void initPoints() {
 #undef ULL
 
 // Verify the output Voronoi Diagram
-void verifyResult() {
+void verifyResult(int PIC_WIDTH) {
     int errorCount = 0;
     int m_tx, m_ty, b_site_idx, b_tx, b_ty;
     double dist, myDist, correct_dist;
@@ -232,7 +232,7 @@ void verifyResult() {
         error_count_global_prfa[dur_idx] = errorCount;
 }
 
-void convert_output_diagram(int *voronoi, std::string pic_name) {
+void convert_output_diagram(int *voronoi, std::string pic_name, int PIC_WIDTH) {
     printf("Converting pixel labels\n");
     for (int j = 0; j < PIC_WIDTH; ++j) {
         for (int i = 0; i < PIC_WIDTH; ++i) {
@@ -265,7 +265,7 @@ void convert_output_diagram(int *voronoi, std::string pic_name) {
 
 
 // Run the tests
-void runTests() {
+void runTests(int PIC_WIDTH) {
     // RNG instances, uniform = 0, normal = 1, clusters = 2, alignments = 3
     if (DISTRIBUTION == E_DISTRIBUTION::uniform) {
         printf("uniform distribution\n");
@@ -284,13 +284,13 @@ void runTests() {
     if (USE_IMAGE_INPUT == false)
         generateRandomPoints(PIC_WIDTH, SITES_NUMBER);
     else {
-        if (readInputFile() == false) {     // 2D only
+        if (readInputFile(PIC_WIDTH) == false) {     // 2D only
             printf("Fail to read input file!\n");
             return;
         }
     }
 
-    initPoints();
+    initPoints(PIC_WIDTH);
 
     for (int i = 0; i < SITES_NUMBER; ++i) {
         kdtree_p[i].x[0] = inputPoints[i * 2];
@@ -307,13 +307,13 @@ void runTests() {
     float dur_cuda = 0;     // execution time recorded by cuda timer
 
     if (CHECK_FAULT) {
-        dur_cuda = bfaVoronoiDiagram(brute_voronoi_int, inputPoints); 
+        dur_cuda = bfaVoronoiDiagram(brute_voronoi_int, inputPoints, PIC_WIDTH); 
         printf("BFA completed.\n");
         
     }
 
     dur_cuda = pfaVoronoiDiagram(pfaOutputVoronoi, kdtree, 
-        &dur_H2D_global_prfa[dur_idx], &dur_kernel_global_prfa[dur_idx], &dur_D2H_global_prfa[dur_idx]);
+        &dur_H2D_global_prfa[dur_idx], &dur_kernel_global_prfa[dur_idx], &dur_D2H_global_prfa[dur_idx], PIC_WIDTH);
 
     if (ITER_TEST)
         dur_global_prfa[dur_idx] = dur_cuda;
@@ -326,7 +326,7 @@ void runTests() {
     free(kdtree);
 
     if (CHECK_FAULT) {
-        verifyResult();
+        verifyResult(PIC_WIDTH);
         bfaDeinitialization();
     }
 
@@ -335,14 +335,15 @@ void runTests() {
             std::string dir_path_front = IMAGE_OUTPUT_PREFIX;
             dir_path_front += std::to_string((dur_idx / 10));
             dir_path_front += std::to_string((dur_idx % 10));
-            convert_output_diagram(voronoi_int, dir_path_front + ".txt");
+            convert_output_diagram(voronoi_int, dir_path_front + ".txt", PIC_WIDTH);
         } else
-            convert_output_diagram(voronoi_int, IMAGE_OUTPUT_PREFIX + IMAGE_FILE_NUMBER);
+            convert_output_diagram(voronoi_int, IMAGE_OUTPUT_PREFIX + IMAGE_FILE_NUMBER, PIC_WIDTH);
     }
 }
 
 int main(int argc,char **argv) {
-    initialization();
+    int PIC_WIDTH = 16384;
+    initialization(PIC_WIDTH);
 
     if (ITER_TEST) {
         double avg_dur_total_prfa = 0, avg_dur1_prfa = 0, avg_dur2_prfa = 0, avg_dur3_prfa = 0;
@@ -351,7 +352,7 @@ int main(int argc,char **argv) {
         for (dur_idx = 0; dur_idx < ITER_COUNT; ++dur_idx) {
             printf("-----------------\n");
             printf("iter num: %d\n", dur_idx);
-            runTests();
+            runTests(PIC_WIDTH);
             if (dur_idx == 0) continue;
 
             avg_dur_total_prfa += dur_global_prfa[dur_idx];
@@ -380,7 +381,7 @@ int main(int argc,char **argv) {
         printf("avg dur H2D = %.4fms, avg dur kernel = %.4fms, avg dur D2H = %.4fms\n", avg_dur1_prfa, avg_dur2_prfa, avg_dur3_prfa);
         printf("avg error count = %.4f\n", avg_error_count_prfa);
     } else {
-        runTests();
+        runTests(PIC_WIDTH);
     }
     deinitialization();
 	return 0;

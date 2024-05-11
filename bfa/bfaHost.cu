@@ -19,7 +19,7 @@ size_t bfaSitesMemSize;    // Size (in bytes) of sites
 int sites_num;
 
 template <typename T>   // short2 *sites
-__global__ void brute_force_2D_kernel(int *voronoi, T sites, int sites_num) {
+__global__ void brute_force_2D_kernel(int *voronoi, T sites, int sites_num, int PIC_WIDTH) {
     short2 p_coord = make_short2(blockIdx.x * blockDim.x + threadIdx.x, 
         blockIdx.y * blockDim.y + threadIdx.y);
     int p_idx = p_coord.y * PIC_WIDTH + p_coord.x;
@@ -38,7 +38,7 @@ __global__ void brute_force_2D_kernel(int *voronoi, T sites, int sites_num) {
 
 // Initialize necessary memory for 2D Voronoi Diagram computation
 #define ULL unsigned long long
-void bfaInitialization(const int sites_number) {
+void bfaInitialization(const int sites_number, int PIC_WIDTH) {
     sites_num = sites_number;
     bfaPicMemSize = (ULL) POW_DIM(PIC_WIDTH) * (ULL)sizeof(int); 
     cudaMalloc((void **) &bfaDiagram, bfaPicMemSize);
@@ -57,14 +57,14 @@ void bfaInitialize(short *sites) {
         cudaMemcpy(bfaSites<short2*>, sites, bfaSitesMemSize, cudaMemcpyHostToDevice);
 }
 
-void bfa2DCompute() {
+void bfa2DCompute(int PIC_WIDTH) {
     dim3 blockDim = dim3(32, 32);
     dim3 gridDim = dim3(PIC_WIDTH/32, PIC_WIDTH/32);
-    brute_force_2D_kernel<<<gridDim, blockDim>>>(bfaDiagram, bfaSites<short2*>, sites_num);
+    brute_force_2D_kernel<<<gridDim, blockDim>>>(bfaDiagram, bfaSites<short2*>, sites_num, PIC_WIDTH);
 }
 
 // Compute 2D Voronoi diagram
-float bfaVoronoiDiagram(int *diagram, short *sites) {
+float bfaVoronoiDiagram(int *diagram, short *sites, int PIC_WIDTH) {
     cudaEvent_t start,stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
@@ -75,7 +75,7 @@ float bfaVoronoiDiagram(int *diagram, short *sites) {
     bfaInitialize(sites);
 
     // Computation
-    bfa2DCompute();
+    bfa2DCompute(PIC_WIDTH);
     
     // Copy back the result
     if (cudaMemcpy(diagram, bfaDiagram, bfaPicMemSize, cudaMemcpyDeviceToHost) != cudaSuccess)

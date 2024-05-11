@@ -25,7 +25,7 @@ size_t treeMemSize;    // Size (in bytes) of sites
 
 // Initialize necessary memory for 2D Voronoi Diagram computation
 #define ULL unsigned long long
-void pfaInitialization(const int tree_array_size) {
+void pfaInitialization(const int tree_array_size, int PIC_WIDTH) {
     picMemSize = (ULL) POW_DIM(PIC_WIDTH) * (ULL)DIM * (ULL)sizeof(short);
     if (cudaMalloc((void **) &pfaDiagram<short2*>, picMemSize) != cudaSuccess)
         printf("pfaDiagram<short2*> cudaMalloc error\n");
@@ -48,15 +48,15 @@ void pfaInitialize(DTYPE *tree_h) {
         printf("pfaInitialize memcpy error\n");
 }
 
-void pfa2DCompute() {
+void pfa2DCompute(int PIC_WIDTH) {
     dim3 prfaBlockDim = dim3(PRFA_BLOCK_SIZE_2D_X/THREAD_DIM, PRFA_BLOCK_SIZE_2D_Y/THREAD_DIM);
     dim3 prfaGridDim = dim3(PIC_WIDTH/PRFA_BLOCK_SIZE_2D_X, PIC_WIDTH/PRFA_BLOCK_SIZE_2D_Y);
-    prfa_2D_shared_mem_opt_kernel<<<prfaGridDim, prfaBlockDim>>>(pfaDiagram<short2*>, tree_d);
+    prfa_2D_shared_mem_opt_kernel<<<prfaGridDim, prfaBlockDim>>>(pfaDiagram<short2*>, tree_d, PIC_WIDTH);
 }
 
 
 // Compute 2D Voronoi diagram, return execution time
-float pfaVoronoiDiagram(short *diagram, DTYPE *tree_h, float *dur_H2D, float *dur_kernel, float *dur_D2H) {
+float pfaVoronoiDiagram(short *diagram, DTYPE *tree_h, float *dur_H2D, float *dur_kernel, float *dur_D2H, int PIC_WIDTH) {
     cudaDeviceSynchronize();    // debug
 #if PRFA_USING_PINNED_MEM == true
     DTYPE *tree_pinned;
@@ -98,7 +98,7 @@ float pfaVoronoiDiagram(short *diagram, DTYPE *tree_h, float *dur_H2D, float *du
     
     // Computation
     cudaEventRecord(kernel_start,0);
-    pfa2DCompute();
+    pfa2DCompute(PIC_WIDTH);
     cudaEventRecord(kernel_stop,0);
     cudaEventSynchronize(kernel_stop);
 

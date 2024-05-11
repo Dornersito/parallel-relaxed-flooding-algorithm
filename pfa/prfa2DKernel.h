@@ -10,7 +10,7 @@ File Name: prfa2DKernel.h
 // Compute found[0], then found[1], found[2] sqeuentially to decrease the size of claimed_queue.
 // Use float for target pixel of each subregion.
 // Storing s_found_idx instead of s_found (using coord) to reduce the shared memory size
-__global__ void prfa_2D_shared_mem_opt_kernel(short2 *voronoi, DTYPE *tree) {
+__global__ void prfa_2D_shared_mem_opt_kernel(short2 *voronoi, DTYPE *tree, int PIC_WIDTH) {
 	const int tid = threadIdx.y * blockDim.x + threadIdx.x;   // thread id in 1 dimension
 	
     // x_min_large, for the large (entire) voronoi diagram

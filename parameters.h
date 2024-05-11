@@ -7,7 +7,7 @@ File Name: parameters.h
 
 #define DTYPE short     // point data type
 #define DIM 2           // 2D tasks
-const static int PIC_WIDTH = 2048;
+// const static int PIC_WIDTH = 2048;
 
 // if points are not generated randomly (but from an image), set SITES_NUMBER to 0
 // static int SITES_NUMBER = 0;
@@ -15,7 +15,7 @@ const static int PIC_WIDTH = 2048;
 // 2D 0.01%: 256-7, 512-26, 1024-105, 2048-419, 4096-1678, 8192-6711, 16384-26844
 // 2D 0.1%: 256-66, 512-262, 1024-1049, 2048-4194, 4096-16777, 8192-67109, 16384-268435
 // 2D 1%: 256-655, 512-2621, 1024-10486, 2048-41943, 4096-167772, 8192-671089, 16384-2684355
-static int SITES_NUMBER = 4194;
+static int SITES_NUMBER = 2684355;
 
 // type of distributions of randomly generated datasets
 enum class E_DISTRIBUTION {
@@ -37,9 +37,9 @@ const static E_DISTRIBUTION DISTRIBUTION = E_DISTRIBUTION::uniform;
 #define THREAD_DIM  4                   // this affects footmark in PRFA's kernel
 
 // K nearest points for k-d tree
-#define K 7
+#define K 11
 #define COMPRESS_KD_NODE true
-#define TREE_H 13   // log2(2, SITES_NUMBER), for k-d tree
+#define TREE_H 22 // log2(2, SITES_NUMBER), for k-d tree
 // 15: 4
 // 2D 0.01%  105: 7, 419: 9, 1678: 11, 6711: 13, 26844: 15
 // 2D 0.1%  1049: 11, 4194: 13, 16777: 15, 67109: 17, 268435: 19
