@@ -109,7 +109,7 @@ void generateRandomPoints(int width, int nPoints) {
 // read point data from an txt file
 bool readInputFile(int PIC_WIDTH) {
     // read from txt
-    SITES_NUMBER = 0;
+    int SITES_NUMBER = 0;
     memset(inputPoints, 0, sizeof(inputPoints));
     std::ifstream ifs;
     std::string line;
@@ -168,7 +168,7 @@ void deinitialization() {
 
 // Init    
 #define ULL unsigned long long
-void initialization(int PIC_WIDTH) {
+void initialization(int PIC_WIDTH, int SITES_NUMBER) {
     if (USE_IMAGE_INPUT == true)
         inputPoints     = (short *) malloc((ULL)POW_DIM(PIC_WIDTH) * (ULL)DIM * (ULL)sizeof(short));
     else
@@ -183,7 +183,7 @@ void initialization(int PIC_WIDTH) {
 }
 
 // Init points
-void initPoints(int PIC_WIDTH) {
+void initPoints(int PIC_WIDTH, int SITES_NUMBER) {
     kdtree_array_size = next_pow_of_2(SITES_NUMBER);
     pfaInitialization(kdtree_array_size, PIC_WIDTH);
     if (CHECK_FAULT)
@@ -232,7 +232,7 @@ void verifyResult(int PIC_WIDTH) {
         error_count_global_prfa[dur_idx] = errorCount;
 }
 
-void convert_output_diagram(int *voronoi, std::string pic_name, int PIC_WIDTH) {
+void convert_output_diagram(int *voronoi, std::string pic_name, int PIC_WIDTH, int SITES_NUMBER) {
     printf("Converting pixel labels\n");
     for (int j = 0; j < PIC_WIDTH; ++j) {
         for (int i = 0; i < PIC_WIDTH; ++i) {
@@ -265,7 +265,7 @@ void convert_output_diagram(int *voronoi, std::string pic_name, int PIC_WIDTH) {
 
 
 // Run the tests
-void runTests(int PIC_WIDTH) {
+void runTests(int PIC_WIDTH, int SITES_NUMBER) {
     // RNG instances, uniform = 0, normal = 1, clusters = 2, alignments = 3
     if (DISTRIBUTION == E_DISTRIBUTION::uniform) {
         printf("uniform distribution\n");
@@ -290,7 +290,7 @@ void runTests(int PIC_WIDTH) {
         }
     }
 
-    initPoints(PIC_WIDTH);
+    initPoints(PIC_WIDTH, SITES_NUMBER);
 
     for (int i = 0; i < SITES_NUMBER; ++i) {
         kdtree_p[i].x[0] = inputPoints[i * 2];
@@ -335,15 +335,17 @@ void runTests(int PIC_WIDTH) {
             std::string dir_path_front = IMAGE_OUTPUT_PREFIX;
             dir_path_front += std::to_string((dur_idx / 10));
             dir_path_front += std::to_string((dur_idx % 10));
-            convert_output_diagram(voronoi_int, dir_path_front + ".txt", PIC_WIDTH);
+            convert_output_diagram(voronoi_int, dir_path_front + ".txt", PIC_WIDTH, SITES_NUMBER);
         } else
-            convert_output_diagram(voronoi_int, IMAGE_OUTPUT_PREFIX + IMAGE_FILE_NUMBER, PIC_WIDTH);
+            convert_output_diagram(voronoi_int, IMAGE_OUTPUT_PREFIX + IMAGE_FILE_NUMBER, PIC_WIDTH, SITES_NUMBER);
     }
 }
 
 int main(int argc,char **argv) {
-    int PIC_WIDTH = 16384;
-    initialization(PIC_WIDTH);
+    int PIC_WIDTH = 8192;
+    int SITES_NUMBER = 671089;
+
+    initialization(PIC_WIDTH, SITES_NUMBER);
 
     if (ITER_TEST) {
         double avg_dur_total_prfa = 0, avg_dur1_prfa = 0, avg_dur2_prfa = 0, avg_dur3_prfa = 0;
@@ -352,7 +354,7 @@ int main(int argc,char **argv) {
         for (dur_idx = 0; dur_idx < ITER_COUNT; ++dur_idx) {
             printf("-----------------\n");
             printf("iter num: %d\n", dur_idx);
-            runTests(PIC_WIDTH);
+            runTests(PIC_WIDTH, SITES_NUMBER);
             if (dur_idx == 0) continue;
 
             avg_dur_total_prfa += dur_global_prfa[dur_idx];
@@ -381,7 +383,7 @@ int main(int argc,char **argv) {
         printf("avg dur H2D = %.4fms, avg dur kernel = %.4fms, avg dur D2H = %.4fms\n", avg_dur1_prfa, avg_dur2_prfa, avg_dur3_prfa);
         printf("avg error count = %.4f\n", avg_error_count_prfa);
     } else {
-        runTests(PIC_WIDTH);
+        runTests(PIC_WIDTH, SITES_NUMBER);
     }
     deinitialization();
 	return 0;
