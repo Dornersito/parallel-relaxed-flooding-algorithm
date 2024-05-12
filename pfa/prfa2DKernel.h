@@ -10,9 +10,12 @@ File Name: prfa2DKernel.h
 // Compute found[0], then found[1], found[2] sqeuentially to decrease the size of claimed_queue.
 // Use float for target pixel of each subregion.
 // Storing s_found_idx instead of s_found (using coord) to reduce the shared memory size
-__global__ void prfa_2D_shared_mem_opt_kernel(short2 *voronoi, DTYPE *tree, int PIC_WIDTH) {
+__global__ void prfa_2D_shared_mem_opt_kernel(short2 *voronoi, DTYPE *tree, int PIC_WIDTH, int kNN_found_shared_size, int K) {
 	const int tid = threadIdx.y * blockDim.x + threadIdx.x;   // thread id in 1 dimension
 	
+	extern __shared__ char smem[];
+
+
     // x_min_large, for the large (entire) voronoi diagram
     const short x_min_l = PRFA_BLOCK_SIZE_2D_X * blockIdx.x + THREAD_DIM * threadIdx.x;
     const short y_min_l = PRFA_BLOCK_SIZE_2D_Y * blockIdx.y + THREAD_DIM * threadIdx.y;
@@ -25,18 +28,18 @@ __global__ void prfa_2D_shared_mem_opt_kernel(short2 *voronoi, DTYPE *tree, int 
 	// notice: use FD_IDX to access the elements
 
 	// int and float are both 4B, found array and dst array have the same size
-	const unsigned int kNN_found_shared_size = sizeof(int) * (PRFA_BLOCK_SIZE_2D_X * PRFA_BLOCK_SIZE_2D_Y / THREAD_DIM / THREAD_DIM) * K;
-	// each thread needs THREAD_DIM * THREAD_DIM
-	const unsigned int flooding_shared_size = sizeof(short2) * (PRFA_BLOCK_SIZE_2D_X * PRFA_BLOCK_SIZE_2D_Y);
+	// const unsigned int kNN_found_shared_size = sizeof(int) * (PRFA_BLOCK_SIZE_2D_X * PRFA_BLOCK_SIZE_2D_Y / THREAD_DIM / THREAD_DIM) * K;
+	// // each thread needs THREAD_DIM * THREAD_DIM
+	// const unsigned int flooding_shared_size = sizeof(short2) * (PRFA_BLOCK_SIZE_2D_X * PRFA_BLOCK_SIZE_2D_Y);
 
-	const unsigned int max_shared_size = kNN_found_shared_size > flooding_shared_size ? kNN_found_shared_size : flooding_shared_size;
-	__shared__ char smem[max_shared_size + kNN_found_shared_size];
+	// const unsigned int max_shared_size = kNN_found_shared_size > flooding_shared_size ? kNN_found_shared_size : flooding_shared_size;
+	// __shared__ char smem[max_shared_size + kNN_found_shared_size]
 
 	int *s_found_idx = reinterpret_cast<int*>(smem);
 	float *s_dst_k = reinterpret_cast<float*>(smem + kNN_found_shared_size);
 
 #if COMPRESS_KD_NODE == true
-	k_nearest_found_idx_two_stacks_compressed_node_2D<DTYPE, float, float>(tree, target, s_found_idx + tid * K, s_dst_k + tid * K);
+	k_nearest_found_idx_two_stacks_compressed_node_2D<DTYPE, float, float>(tree, target, s_found_idx + tid * K, s_dst_k + tid * K, K);
 #else
 	k_nearest_found_idx_two_stacks_2D<DTYPE, float, float>(tree, target, s_found_idx + tid * K, s_dst_k + tid * K);
 #endif	

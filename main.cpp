@@ -34,7 +34,7 @@ enum class E_DISTRIBUTION {
 
 static const bool CHECK_FAULT = false;       // check incorrect results of pixel labels
 static const bool PRINT_FAULT = false;       // print all incorrect pixel crds
-static const bool ITER_TEST = false;
+static const bool ITER_TEST = true;
 static const int ITER_COUNT = 5 + 1;       // skip the 1st iter for average time
 static const bool USE_IMAGE_INPUT = false;  // if true, change the SITES_NUMBER to 0 and set PIC_WIDTH to the image's size
 static const bool PRINT_VORONOI = false;
@@ -273,7 +273,7 @@ void convert_output_diagram(int *voronoi, std::string pic_name, int PIC_WIDTH, i
 
 
 // Run the tests
-void runTests(int PIC_WIDTH, int SITES_NUMBER, E_DISTRIBUTION DISTRIBUTION) {
+void runTests(int PIC_WIDTH, int SITES_NUMBER, E_DISTRIBUTION DISTRIBUTION, int K) {
     // RNG instances, uniform = 0, normal = 1, clusters = 2, alignments = 3
     if (DISTRIBUTION == E_DISTRIBUTION::uniform) {
         printf("uniform distribution\n");
@@ -321,7 +321,7 @@ void runTests(int PIC_WIDTH, int SITES_NUMBER, E_DISTRIBUTION DISTRIBUTION) {
     }
 
     dur_cuda = pfaVoronoiDiagram(pfaOutputVoronoi, kdtree, 
-        &dur_H2D_global_prfa[dur_idx], &dur_kernel_global_prfa[dur_idx], &dur_D2H_global_prfa[dur_idx], PIC_WIDTH);
+        &dur_H2D_global_prfa[dur_idx], &dur_kernel_global_prfa[dur_idx], &dur_D2H_global_prfa[dur_idx], PIC_WIDTH, K);
 
     if (ITER_TEST)
         dur_global_prfa[dur_idx] = dur_cuda;
@@ -350,10 +350,13 @@ void runTests(int PIC_WIDTH, int SITES_NUMBER, E_DISTRIBUTION DISTRIBUTION) {
 }
 
 int main(int argc,char **argv) {
-    int PIC_WIDTH = 2048;
-    int SITES_NUMBER = 419;
-    int DISTRIBUTION_NUM = 4;
+    int PIC_WIDTH = 8192;
+    int SITES_NUMBER = 671089;
+    int DISTRIBUTION_NUM = 1;
     E_DISTRIBUTION DISTRIBUTION;
+    int K = 11;
+    int TREE_H2 = log2(SITES_NUMBER) + 1;
+    printf("TREE_H: %i\n", TREE_H2);
 
     switch(DISTRIBUTION_NUM){
         case 1:
@@ -372,6 +375,7 @@ int main(int argc,char **argv) {
             return(EXIT_FAILURE);
     }
 
+
     initialization(PIC_WIDTH, SITES_NUMBER);
 
     if (ITER_TEST) {
@@ -381,7 +385,7 @@ int main(int argc,char **argv) {
         for (dur_idx = 0; dur_idx < ITER_COUNT; ++dur_idx) {
             printf("-----------------\n");
             printf("iter num: %d\n", dur_idx);
-            runTests(PIC_WIDTH, SITES_NUMBER, DISTRIBUTION);
+            runTests(PIC_WIDTH, SITES_NUMBER, DISTRIBUTION, K);
             if (dur_idx == 0) continue;
 
             avg_dur_total_prfa += dur_global_prfa[dur_idx];
@@ -410,7 +414,7 @@ int main(int argc,char **argv) {
         printf("avg dur H2D = %.4fms, avg dur kernel = %.4fms, avg dur D2H = %.4fms\n", avg_dur1_prfa, avg_dur2_prfa, avg_dur3_prfa);
         printf("avg error count = %.4f\n", avg_error_count_prfa);
     } else {
-        runTests(PIC_WIDTH, SITES_NUMBER, DISTRIBUTION);
+        runTests(PIC_WIDTH, SITES_NUMBER, DISTRIBUTION, K);
     }
     deinitialization();
 	return 0;

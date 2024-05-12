@@ -37,9 +37,9 @@ File Name: parameters.h
 #define THREAD_DIM  4                   // this affects footmark in PRFA's kernel
 
 // K nearest points for k-d tree
-#define K 5
+//#define K 5
 #define COMPRESS_KD_NODE true
-#define TREE_H 9 // log2(2, SITES_NUMBER), for k-d tree
+#define TREE_H 20 // log2(2, SITES_NUMBER), for k-d tree
 // 15: 4
 // 2D 0.01%  105: 7, 419: 9, 1678: 11, 6711: 13, 26844: 15
 // 2D 0.1%  1049: 11, 4194: 13, 16777: 15, 67109: 17, 268435: 19

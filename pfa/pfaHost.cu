@@ -48,15 +48,20 @@ void pfaInitialize(DTYPE *tree_h) {
         printf("pfaInitialize memcpy error\n");
 }
 
-void pfa2DCompute(int PIC_WIDTH) {
+void pfa2DCompute(int PIC_WIDTH, int K) {
     dim3 prfaBlockDim = dim3(PRFA_BLOCK_SIZE_2D_X/THREAD_DIM, PRFA_BLOCK_SIZE_2D_Y/THREAD_DIM);
     dim3 prfaGridDim = dim3(PIC_WIDTH/PRFA_BLOCK_SIZE_2D_X, PIC_WIDTH/PRFA_BLOCK_SIZE_2D_Y);
-    prfa_2D_shared_mem_opt_kernel<<<prfaGridDim, prfaBlockDim>>>(pfaDiagram<short2*>, tree_d, PIC_WIDTH);
+
+    const unsigned int kNN_found_shared_size = sizeof(int) * (PRFA_BLOCK_SIZE_2D_X * PRFA_BLOCK_SIZE_2D_Y / THREAD_DIM / THREAD_DIM) * K;
+    const unsigned int flooding_shared_size = sizeof(short2) * (PRFA_BLOCK_SIZE_2D_X * PRFA_BLOCK_SIZE_2D_Y);
+    const unsigned int max_shared_size = kNN_found_shared_size > flooding_shared_size ? kNN_found_shared_size : flooding_shared_size;
+
+    prfa_2D_shared_mem_opt_kernel<<<prfaGridDim, prfaBlockDim, max_shared_size + kNN_found_shared_size>>>(pfaDiagram<short2*>, tree_d, PIC_WIDTH, kNN_found_shared_size, K);
 }
 
 
 // Compute 2D Voronoi diagram, return execution time
-float pfaVoronoiDiagram(short *diagram, DTYPE *tree_h, float *dur_H2D, float *dur_kernel, float *dur_D2H, int PIC_WIDTH) {
+float pfaVoronoiDiagram(short *diagram, DTYPE *tree_h, float *dur_H2D, float *dur_kernel, float *dur_D2H, int PIC_WIDTH, int K) {
     cudaDeviceSynchronize();    // debug
 #if PRFA_USING_PINNED_MEM == true
     DTYPE *tree_pinned;
@@ -98,7 +103,7 @@ float pfaVoronoiDiagram(short *diagram, DTYPE *tree_h, float *dur_H2D, float *du
     
     // Computation
     cudaEventRecord(kernel_start,0);
-    pfa2DCompute(PIC_WIDTH);
+    pfa2DCompute(PIC_WIDTH, K);
     cudaEventRecord(kernel_stop,0);
     cudaEventSynchronize(kernel_stop);
 

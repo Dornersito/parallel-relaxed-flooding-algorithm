@@ -17,7 +17,7 @@ File Name: kdtreeSearch.h
 // T_p stands for type of ref point coordinates, T_t stands for type of target (query) point coordinates
 // T_d stands for type of distance, should be float or double to prevent overflow
 template<typename T_p, typename T_t, typename T_d>
-__device__ void k_nearest_found_idx_two_stacks_2D(const T_p *tree, const T_t *target, int *found_idx, T_d *dst_k) {
+__device__ void k_nearest_found_idx_two_stacks_2D(const T_p *tree, const T_t *target, int *found_idx, T_d *dst_k, int K) {
     int node_stack[TREE_H - 1];
     T_d dx2_stack[TREE_H - 1];
     int i_stack = 0;    // only for 2D tree. inititalized: 1 << 0 = 0, if a bit == 0, axis is 0, else axis is 1
@@ -79,7 +79,7 @@ __device__ void k_nearest_found_idx_two_stacks_2D(const T_p *tree, const T_t *ta
 // T_p stands for type of ref point coordinates, T_t stands for type of target (query) point coordinates
 // T_d stands for type of distance, should be float or double to prevent overflow
 template<typename T_p, typename T_t, typename T_d>
-__device__ void k_nearest_found_idx_two_stacks_compressed_node_2D(const T_p *tree, const T_t *target, int *found_idx, T_d *dst_k) {
+__device__ void k_nearest_found_idx_two_stacks_compressed_node_2D(const T_p *tree, const T_t *target, int *found_idx, T_d *dst_k, int K) {
     int node_stack[TREE_H - 1];
     T_d dx2_stack[TREE_H - 1];
     int i_stack = 0;    // only for 2D tree. inititalized: 1 << 0 = 0, if a bit == 0, axis is 0, else axis is 1
