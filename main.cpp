@@ -24,6 +24,14 @@ File Name: main.cpp
 
 #include "bfa/bfa.h"
 
+enum class E_DISTRIBUTION {
+    uniform,
+    normal,
+    clusters,
+    alignments,
+};
+
+
 static const bool CHECK_FAULT = false;       // check incorrect results of pixel labels
 static const bool PRINT_FAULT = false;       // print all incorrect pixel crds
 static const bool ITER_TEST = false;
@@ -71,7 +79,7 @@ int next_pow_of_2(int num) {
 }
 
 // Generate input points
-void generateRandomPoints(int width, int nPoints) {
+void generateRandomPoints(int width, int nPoints, E_DISTRIBUTION DISTRIBUTION) {
     int tx, ty, tz;
     if (ITER_TEST) {
         RNG_generator_p->rand_init(dur_idx);
@@ -265,7 +273,7 @@ void convert_output_diagram(int *voronoi, std::string pic_name, int PIC_WIDTH, i
 
 
 // Run the tests
-void runTests(int PIC_WIDTH, int SITES_NUMBER) {
+void runTests(int PIC_WIDTH, int SITES_NUMBER, E_DISTRIBUTION DISTRIBUTION) {
     // RNG instances, uniform = 0, normal = 1, clusters = 2, alignments = 3
     if (DISTRIBUTION == E_DISTRIBUTION::uniform) {
         printf("uniform distribution\n");
@@ -282,7 +290,7 @@ void runTests(int PIC_WIDTH, int SITES_NUMBER) {
     }
 
     if (USE_IMAGE_INPUT == false)
-        generateRandomPoints(PIC_WIDTH, SITES_NUMBER);
+        generateRandomPoints(PIC_WIDTH, SITES_NUMBER, DISTRIBUTION);
     else {
         if (readInputFile(PIC_WIDTH) == false) {     // 2D only
             printf("Fail to read input file!\n");
@@ -342,8 +350,27 @@ void runTests(int PIC_WIDTH, int SITES_NUMBER) {
 }
 
 int main(int argc,char **argv) {
-    int PIC_WIDTH = 8192;
-    int SITES_NUMBER = 671089;
+    int PIC_WIDTH = 2048;
+    int SITES_NUMBER = 419;
+    int DISTRIBUTION_NUM = 4;
+    E_DISTRIBUTION DISTRIBUTION;
+
+    switch(DISTRIBUTION_NUM){
+        case 1:
+            DISTRIBUTION = E_DISTRIBUTION::uniform;
+            break;
+        case 2:
+            DISTRIBUTION = E_DISTRIBUTION::normal;
+            break;
+        case 3:
+            DISTRIBUTION = E_DISTRIBUTION::clusters;
+            break;
+        case 4:
+            DISTRIBUTION = E_DISTRIBUTION::alignments;
+            break;
+        default:
+            return(EXIT_FAILURE);
+    }
 
     initialization(PIC_WIDTH, SITES_NUMBER);
 
@@ -354,7 +381,7 @@ int main(int argc,char **argv) {
         for (dur_idx = 0; dur_idx < ITER_COUNT; ++dur_idx) {
             printf("-----------------\n");
             printf("iter num: %d\n", dur_idx);
-            runTests(PIC_WIDTH, SITES_NUMBER);
+            runTests(PIC_WIDTH, SITES_NUMBER, DISTRIBUTION);
             if (dur_idx == 0) continue;
 
             avg_dur_total_prfa += dur_global_prfa[dur_idx];
@@ -383,7 +410,7 @@ int main(int argc,char **argv) {
         printf("avg dur H2D = %.4fms, avg dur kernel = %.4fms, avg dur D2H = %.4fms\n", avg_dur1_prfa, avg_dur2_prfa, avg_dur3_prfa);
         printf("avg error count = %.4f\n", avg_error_count_prfa);
     } else {
-        runTests(PIC_WIDTH, SITES_NUMBER);
+        runTests(PIC_WIDTH, SITES_NUMBER, DISTRIBUTION);
     }
     deinitialization();
 	return 0;

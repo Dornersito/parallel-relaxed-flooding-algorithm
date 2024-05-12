@@ -18,13 +18,13 @@ File Name: parameters.h
 // static int SITES_NUMBER = 2684355;
 
 // type of distributions of randomly generated datasets
-enum class E_DISTRIBUTION {
-    uniform,
-    normal,
-    clusters,
-    alignments,
-};
-const static E_DISTRIBUTION DISTRIBUTION = E_DISTRIBUTION::uniform;
+// enum class E_DISTRIBUTION {
+//     uniform,
+//     normal,
+//     clusters,
+//     alignments,
+// };
+// const static E_DISTRIBUTION DISTRIBUTION = E_DISTRIBUTION::uniform;
 #define RNG_CLUSTER_COUNT 20
 #define RNG_LINE_COUNT 4
 // sqrt(41943) = 205, sqrt(4194) = 65, sqrt(419) = 20
@@ -37,9 +37,9 @@ const static E_DISTRIBUTION DISTRIBUTION = E_DISTRIBUTION::uniform;
 #define THREAD_DIM  4                   // this affects footmark in PRFA's kernel
 
 // K nearest points for k-d tree
-#define K 11
+#define K 5
 #define COMPRESS_KD_NODE true
-#define TREE_H 22 // log2(2, SITES_NUMBER), for k-d tree
+#define TREE_H 9 // log2(2, SITES_NUMBER), for k-d tree
 // 15: 4
 // 2D 0.01%  105: 7, 419: 9, 1678: 11, 6711: 13, 26844: 15
 // 2D 0.1%  1049: 11, 4194: 13, 16777: 15, 67109: 17, 268435: 19
