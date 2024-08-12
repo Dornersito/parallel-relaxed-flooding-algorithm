@@ -48,20 +48,23 @@ void pfaInitialize(DTYPE *tree_h) {
         printf("pfaInitialize memcpy error\n");
 }
 
-void pfa2DCompute(int PIC_WIDTH, int K) {
+void pfa2DCompute(int PIC_WIDTH, int K, int TREE_H) {
     dim3 prfaBlockDim = dim3(PRFA_BLOCK_SIZE_2D_X/THREAD_DIM, PRFA_BLOCK_SIZE_2D_Y/THREAD_DIM);
     dim3 prfaGridDim = dim3(PIC_WIDTH/PRFA_BLOCK_SIZE_2D_X, PIC_WIDTH/PRFA_BLOCK_SIZE_2D_Y);
 
     const unsigned int kNN_found_shared_size = sizeof(int) * (PRFA_BLOCK_SIZE_2D_X * PRFA_BLOCK_SIZE_2D_Y / THREAD_DIM / THREAD_DIM) * K;
     const unsigned int flooding_shared_size = sizeof(short2) * (PRFA_BLOCK_SIZE_2D_X * PRFA_BLOCK_SIZE_2D_Y);
     const unsigned int max_shared_size = kNN_found_shared_size > flooding_shared_size ? kNN_found_shared_size : flooding_shared_size;
+    // const unsigned int para_kdtreeSearch = TREE_H - 1 + TREE_H - 1;
 
-    prfa_2D_shared_mem_opt_kernel<<<prfaGridDim, prfaBlockDim, max_shared_size + kNN_found_shared_size>>>(pfaDiagram<short2*>, tree_d, PIC_WIDTH, kNN_found_shared_size, K);
+
+    //printf("max_shared_size: %i,  kNN_found_shared_size: %i, total: %i\n", max_shared_size, kNN_found_shared_size, max_shared_size + kNN_found_shared_size);
+    prfa_2D_shared_mem_opt_kernel<<<prfaGridDim, prfaBlockDim, max_shared_size + kNN_found_shared_size>>>(pfaDiagram<short2*>, tree_d, PIC_WIDTH, kNN_found_shared_size, K, TREE_H);
 }
 
 
 // Compute 2D Voronoi diagram, return execution time
-float pfaVoronoiDiagram(short *diagram, DTYPE *tree_h, float *dur_H2D, float *dur_kernel, float *dur_D2H, int PIC_WIDTH, int K) {
+float pfaVoronoiDiagram(short *diagram, DTYPE *tree_h, float *dur_H2D, float *dur_kernel, float *dur_D2H, int PIC_WIDTH, int K, int TREE_H, bool print_iter) {
     cudaDeviceSynchronize();    // debug
 #if PRFA_USING_PINNED_MEM == true
     DTYPE *tree_pinned;
@@ -103,7 +106,7 @@ float pfaVoronoiDiagram(short *diagram, DTYPE *tree_h, float *dur_H2D, float *du
     
     // Computation
     cudaEventRecord(kernel_start,0);
-    pfa2DCompute(PIC_WIDTH, K);
+    pfa2DCompute(PIC_WIDTH, K, TREE_H);
     cudaEventRecord(kernel_stop,0);
     cudaEventSynchronize(kernel_stop);
 
@@ -130,8 +133,10 @@ float pfaVoronoiDiagram(short *diagram, DTYPE *tree_h, float *dur_H2D, float *du
     cudaEventElapsedTime(&dur2, kernel_start, kernel_stop);
     cudaEventElapsedTime(&dur3, D2H_start, D2H_stop);
 
-    printf("CUDA timer PFA execution time: %.*fms\n", 4, dur);
-    printf("H2D: %.*fms, GPU computation: %.*fms, D2H:  %.*fms\n", 4, dur1, 4, dur2, 4, dur3);
+    if(print_iter == true){
+        printf("CUDA timer PFA execution time: %.*fms\n", 4, dur);
+        printf("H2D: %.*fms, GPU computation: %.*fms, D2H:  %.*fms\n", 4, dur1, 4, dur2, 4, dur3);
+    }
     *dur_H2D = dur1;
     *dur_kernel = dur2;
     *dur_D2H = dur3;

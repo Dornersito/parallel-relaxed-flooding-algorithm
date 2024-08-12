@@ -25,8 +25,8 @@ File Name: parameters.h
 //     alignments,
 // };
 // const static E_DISTRIBUTION DISTRIBUTION = E_DISTRIBUTION::uniform;
-#define RNG_CLUSTER_COUNT 20
-#define RNG_LINE_COUNT 4
+#define RNG_CLUSTER_COUNT 410
+#define RNG_LINE_COUNT 55
 // sqrt(41943) = 205, sqrt(4194) = 65, sqrt(419) = 20
 // pow(41943, 1/3) = 35, pow(4194, 1/3) = 17, pow(419, 1/3) = 7 
 
@@ -39,7 +39,7 @@ File Name: parameters.h
 // K nearest points for k-d tree
 //#define K 5
 #define COMPRESS_KD_NODE true
-#define TREE_H 20 // log2(2, SITES_NUMBER), for k-d tree
+// #define TREE_H 20 // log2(2, SITES_NUMBER), for k-d tree
 // 15: 4
 // 2D 0.01%  105: 7, 419: 9, 1678: 11, 6711: 13, 26844: 15
 // 2D 0.1%  1049: 11, 4194: 13, 16777: 15, 67109: 17, 268435: 19

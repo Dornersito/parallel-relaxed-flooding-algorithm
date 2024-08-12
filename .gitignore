@@ -6,4 +6,7 @@
 *.fatbin
 *.vscode
 *.DS_Store
+*.csv
+*.ipynb
 build/
+images/

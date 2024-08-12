@@ -10,7 +10,7 @@ File Name: prfa2DKernel.h
 // Compute found[0], then found[1], found[2] sqeuentially to decrease the size of claimed_queue.
 // Use float for target pixel of each subregion.
 // Storing s_found_idx instead of s_found (using coord) to reduce the shared memory size
-__global__ void prfa_2D_shared_mem_opt_kernel(short2 *voronoi, DTYPE *tree, int PIC_WIDTH, int kNN_found_shared_size, int K) {
+__global__ void prfa_2D_shared_mem_opt_kernel(short2 *voronoi, DTYPE *tree, int PIC_WIDTH, int kNN_found_shared_size, int K, int TREE_H) {
 	const int tid = threadIdx.y * blockDim.x + threadIdx.x;   // thread id in 1 dimension
 	
 	extern __shared__ char smem[];
@@ -37,9 +37,11 @@ __global__ void prfa_2D_shared_mem_opt_kernel(short2 *voronoi, DTYPE *tree, int 
 
 	int *s_found_idx = reinterpret_cast<int*>(smem);
 	float *s_dst_k = reinterpret_cast<float*>(smem + kNN_found_shared_size);
+	
+
 
 #if COMPRESS_KD_NODE == true
-	k_nearest_found_idx_two_stacks_compressed_node_2D<DTYPE, float, float>(tree, target, s_found_idx + tid * K, s_dst_k + tid * K, K);
+	k_nearest_found_idx_two_stacks_compressed_node_2D<DTYPE, float, float>(tree, target, s_found_idx + tid * K, s_dst_k + tid * K, K, TREE_H);
 #else
 	k_nearest_found_idx_two_stacks_2D<DTYPE, float, float>(tree, target, s_found_idx + tid * K, s_dst_k + tid * K);
 #endif	

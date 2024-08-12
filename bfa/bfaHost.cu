@@ -85,6 +85,7 @@ float bfaVoronoiDiagram(int *diagram, short *sites, int PIC_WIDTH) {
     cudaEventSynchronize(stop);
     float dur;
     cudaEventElapsedTime(&dur,start,stop);
+
     printf("CUDA timer Brute Force execution time: %.*fms\n", 4, dur);
     return dur;
 }
